@@ -9,19 +9,16 @@
 
 //Define the type of value: string,integer,dictionary,vector 
 //All of this data structure use the STL in C++.
+
 typedef std::string lkey;
 
 typedef std::string lstring;
 
-template<typename data_type>
-using lvector = std::vector<data_type>;
+using lvector = std::vector<lstring>;
 
-template<typename data_type>
-using lhash = std::unordered_map<data_type>;
+using lhash = std::unordered_map<lkey,lstring>;
 
-//ordered set
-template<typename data_type>
-using lset = std::map<data_type>;
+using lset = std::map<lkey,lstring>;
 
 #endif
 
