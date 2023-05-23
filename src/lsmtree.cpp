@@ -2,6 +2,16 @@
 #include "dcs5231Object.h"
 #include <tuple>
 
+lsmtree::lsmtree():tree(lsmtreeStorage()),nodeCount(0){
+
+}
+lsmtree::lsmtree(const lsmtreeStorage& t,const int32_t count):tree(t),nodeCount(count){
+
+}
+lsmtree::lsmtree(const lsmtree& t){
+    this->tree = t.get_tree();
+    this->nodeCount = t.get_node_number();
+}
 auto lsmtree::get_iter_by_key(const lkey& key) {
     return this->tree.find(key);
 }
@@ -35,9 +45,17 @@ void lsmtree::insert(const kvPair& receive_kvpair){
     if(operation==OPRAND::APPEND) this->append(receive_kvpair);
 }
 
-const kvPair& lsmtree::get(const lkey& key) {
+kvPair lsmtree::get(const lkey& key) {
     auto iter = this->get_iter_by_key(key);
     if(iter!=this->tree.end()) return *iter;
     //Special process if not in the kvpair
     //later the bloom filter will be applied to this searching process.
+}
+
+int32_t lsmtree::get_node_number() const{
+    return this->nodeCount;
+}
+
+lsmtreeStorage lsmtree::get_tree() const {
+    return this->tree;
 }

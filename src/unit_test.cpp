@@ -13,7 +13,7 @@ int main(){
     lkey mytestkey1 = lkey("give me five");
     kvPair mytestkvpair = kvPair(mytestkey1,*c);
     database1.insert(mytestkvpair);
-    const kvPair& mytestkvpair2 = database1.get(lkey("give me five"));
+    auto mytestkvpair2 = database1.get(lkey("give me five"));
     cout<<*reinterpret_cast<int32_t*>((std::get<1>(mytestkvpair).valueStorage.value));
     return 0;
 }
