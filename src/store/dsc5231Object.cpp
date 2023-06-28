@@ -1,5 +1,5 @@
 #include "dcs5231Object.h"
-
+#include "storestruct.h"
 
 void dsc5231Object::free_value_space(){
     if(this->value!=nullptr) {
@@ -97,34 +97,34 @@ void dsc5231Object::_append(const dsc5231Object& _append_data){
     }
 }
 
-valueObject::valueObject(dsc5231Object a,OPRAND b)
+valueObject::valueObject(dsc5231Object a,oprand b)
     :valueStorage(a),operation_log(b){}
 valueObject::valueObject(const valueObject& a){
     this->valueStorage = a.valueStorage;
     this->operation_log = a.operation_log;
 }
 
-const OPRAND valueObject::get_operation_log() const{
+const oprand valueObject::get_operation_log() const{
     return this->operation_log;
 }
 
-void valueObject::operation_log_transfer(OPRAND current_operation){
+void valueObject::operation_log_transfer(oprand current_operation){
     //The state transition of the database operation.
-    OPRAND last_operation_log = this->get_operation_log();
-    if(last_operation_log==OPRAND::APPEND){
-        if(current_operation==OPRAND::APPEND);
-        else if(current_operation==OPRAND::REMOVE) this->operation_log = current_operation;
-        else if(current_operation==OPRAND::SET) this->operation_log = current_operation;
+    oprand last_operation_log = this->get_operation_log();
+    if(last_operation_log==oprand::APPEND){
+        if(current_operation==oprand::APPEND);
+        else if(current_operation==oprand::REMOVE) this->operation_log = current_operation;
+        else if(current_operation==oprand::SET) this->operation_log = current_operation;
     }
-    else if(last_operation_log==OPRAND::REMOVE){
-        if(current_operation==OPRAND::APPEND);//Special process
-        else if(current_operation==OPRAND::REMOVE);//Special process
-        else if(current_operation==OPRAND::SET) this->operation_log = current_operation;
+    else if(last_operation_log==oprand::REMOVE){
+        if(current_operation==oprand::APPEND);//Special process
+        else if(current_operation==oprand::REMOVE);//Special process
+        else if(current_operation==oprand::SET) this->operation_log = current_operation;
     }
-    else if(last_operation_log==OPRAND::SET){
-        if(current_operation==OPRAND::APPEND) this->operation_log = OPRAND::SET;
-        else if(current_operation==OPRAND::REMOVE)this->operation_log = current_operation;
-        else if(current_operation==OPRAND::SET);
+    else if(last_operation_log==oprand::SET){
+        if(current_operation==oprand::APPEND) this->operation_log = oprand::SET;
+        else if(current_operation==oprand::REMOVE)this->operation_log = current_operation;
+        else if(current_operation==oprand::SET);
     }
     return;
 }
@@ -136,12 +136,12 @@ void valueObject::operator=(const valueObject& a){
 }
 
 void valueObject::remove(){
-    this->operation_log_transfer(OPRAND::REMOVE);
+    this->operation_log_transfer(oprand::REMOVE);
     this->valueStorage._remove();
 }
 
 void valueObject::append(const valueObject& value_appended){
-    this->operation_log_transfer(OPRAND::APPEND);
+    this->operation_log_transfer(oprand::APPEND);
     const dsc5231Object& append_data = value_appended.valueStorage;
     this->valueStorage._append(append_data);
 }

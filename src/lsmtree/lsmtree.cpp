@@ -1,5 +1,4 @@
 #include "lsmtree.h"
-//#include "../store/dcs5231Object.h"
 #include <tuple>
 
 lsmtree::lsmtree():tree(lsmtreeStorage()),nodeCount(0){

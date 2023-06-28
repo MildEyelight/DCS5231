@@ -1,6 +1,4 @@
 #include "database.h"
-#include "store/storestruct.h"
-#include "lsmtree/sstable.h"
 #include <string>
 using std::string;
 

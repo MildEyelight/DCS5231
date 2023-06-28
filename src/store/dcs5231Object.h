@@ -27,13 +27,13 @@ public:
 class valueObject{
 public:
     dsc5231Object valueStorage;
-    OPRAND operation_log;
+    oprand operation_log;
 public:
-    valueObject(dsc5231Object a=dsc5231Object(),OPRAND b=OPRAND::REMOVE);
+    valueObject(dsc5231Object a=dsc5231Object(),oprand b=oprand::REMOVE);
     valueObject(const valueObject& a);
 
-    void operation_log_transfer(OPRAND op_log);
-    const OPRAND get_operation_log() const;
+    void operation_log_transfer(oprand op_log);
+    const oprand get_operation_log() const;
     void append(const valueObject& value_appened);
     void remove();
     void set(const valueObject& value_seted);

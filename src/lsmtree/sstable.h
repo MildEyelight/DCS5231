@@ -1,5 +1,6 @@
 #ifndef __SSTABLE_H__
 #define __SSTABLE_H__
+
 #include <string>
 
 //cpp17?
@@ -29,11 +30,15 @@ private:
     static const int metadata_seg_length;
     std::vector<int> file_count_per_level;
 private:
+    //Util functions
     string get_filename(int level, int order);
     bool check_mergeable(int level);
+    std::pair<uint32_t,uint32_t> get_metadata(std::ifstream& file);
+    Value get_value(std::ifstream& file, uint32_t data_ptr);
+private:
     void merge_sstable(int level);
     lsmtree* sstable_to_mmtable(int level, int order);
-    std::pair<Value,bool> find_key_in_file(int level,int order);
+    std::pair<Value,bool> find_key_in_file(int level,int order,const std::string& search_key);
 public:
     sstable();//Initialize the control info of the sstable
     sstable(const sstable& a) = delete;
@@ -52,12 +57,5 @@ public:
 
 };
 
-// write in config
-const string sstable::ss_file_path = "./sstable/";
-const string sstable::ss_file_extension = ".sstable";
-const string sstable::file_prefix = "level";
-const int sstable::max_level = 3;
-const int sstable::max_file_num_per_level = 4;
-const int sstable::metadata_seg_length = 8; 
 
 #endif

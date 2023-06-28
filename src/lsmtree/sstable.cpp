@@ -10,6 +10,15 @@
 using std::vector;
 using std::string;
 
+
+// write in config
+const string sstable::ss_file_path = "./sstable/";
+const string sstable::ss_file_extension = ".sstable";
+const string sstable::file_prefix = "level";
+const int sstable::max_level = 3;
+const int sstable::max_file_num_per_level = 4;
+const int sstable::metadata_seg_length = 8;
+
 string sstable::get_filename(int level, int order){
     string filename = sstable::ss_file_path + 
                        sstable::file_prefix + "_" + std::to_string(level) + "_" + std::to_string(order) +
@@ -21,6 +30,18 @@ bool sstable::check_mergeable(int level){
     if(level == sstable::max_level) return false;
     return this->file_count_per_level[level] == sstable::max_file_num_per_level;
 };
+
+std::pair<uint32_t,uint32_t> sstable::get_metadata(std::ifstream& file){
+    file.seekg(sstable::metadata_seg_length,std::ios::end);
+    char* s = new char[sstable::metadata_seg_length];
+    file.read(s,sizeof(uint32_t)+sizeof(uint32_t));
+    uint32_t* node_count = reinterpret_cast<uint32_t*>(s);
+    uint32_t* key_seg = reinterpret_cast<uint32_t*> (s+sizeof(uint32_t));
+    std::pair<uint32_t,uint32_t> a(*node_count,*key_seg);
+    delete[] s;
+    return a;
+}
+
 
 sstable::sstable():file_count_per_level(std::vector<int>(4)){
     for (int i = 0; i <= sstable::max_level ; i++){
@@ -60,18 +81,16 @@ lsmtree* sstable::sstable_to_mmtable(int level,int order){
 
     //read file by the format of .sstable file.
     //get meta data
-    sstable_file.seekg(sstable::metadata_seg_length,std::ios::end);
-    char* s = new char[sstable::metadata_seg_length];
-    sstable_file.read(s,sizeof(uint32_t)+sizeof(uint32_t));
-    uint32_t* node_count = reinterpret_cast<uint32_t*>(s);
-    uint32_t* key_seg = reinterpret_cast<uint32_t*> (s+sizeof(uint32_t));
+    std::pair<uint32_t,uint32_t> metadata = this->get_metadata(sstable_file);
+    uint32_t node_count = metadata.first;
+    uint32_t key_seg = metadata.second;
     
     sstable_file.seekg(0,std::ios::beg);
-    for(int i = 0; i < *node_count;i++){
+    for(int i = 0; i < node_count;i++){
         //get key 
         char _key_length[sizeof(uint32_t)];
         sstable_file.read(_key_length,sizeof(uint32_t));
-        uint32_t key_length = *(reinterpret_cast<uint32_t*>(key_length));
+        uint32_t key_length = *(reinterpret_cast<uint32_t*>(_key_length));
         char* _key = new char [key_length + 1];
         _key[key_length] = '\0';
         sstable_file.read(_key,key_length);
@@ -102,8 +121,6 @@ lsmtree* sstable::sstable_to_mmtable(int level,int order){
         std::pair<string,Value> insert_pair(key,tmp);
         restored_sstable->set(insert_pair);
     }
-    delete node_count;
-    delete key_seg;
     sstable_file.close();
     return restored_sstable; 
 }
@@ -135,7 +152,7 @@ void sstable::merge_sstable(int level){
     return;
 }
 
-void sstable::save_memtable(lsmtree* tree_to_save, int level = 0){
+void sstable::save_memtable(lsmtree* tree_to_save, int level){
     //Can be written in multithread: merge and save
     if(this->check_mergeable(level)){
         this->merge_sstable(level);   
@@ -193,14 +210,67 @@ void sstable::save_memtable(lsmtree* tree_to_save, int level = 0){
 }
 
 
+std::pair<Value,bool> sstable::find_key_in_file(int level,int order,const std::string& search_key){
+    string filename = this->get_filename(level,order);
+    std::ifstream search_file(filename,std::ios::in);
+    std::pair<uint32_t,uint32_t> metadata = this->get_metadata(search_file);
+    uint32_t node_count = metadata.first;
+    uint32_t key_seg = metadata.second;
 
-std::pair<Value,bool> sstable::find(const string& key){
-    for(int level = 0; level< sstable::max_level;level ++){
-        for(int order = this->file_count_per_level[level] ; order>=0;order --){
+    search_file.seekg(key_seg,std::ios::beg);
+    char _key_length[sizeof(uint32_t)];
+    char _data_ptr[sizeof(uint32_t)];
+    for(int i = 0; i < node_count;i++){
+        //get key 
+        search_file.read(_key_length,sizeof(uint32_t));
+        uint32_t key_length = *(reinterpret_cast<uint32_t*>(_key_length));
+        char* _key = new char [key_length + 1];
+        _key[key_length] = '\0';
+        search_file.read(_key,key_length);
+        string key((_key));
+        if(search_key==key) {
+            search_file.read(_data_ptr,sizeof(uint32_t));
+            uint32_t data_ptr = *(reinterpret_cast<uint32_t*>(_data_ptr));
+            search_file.seekg(data_ptr,std::ios::beg);
+            char _value_length[sizeof(uint32_t)];
 
+            //Copy from ... consider fileparser.
+            search_file.read(_value_length,sizeof(uint32_t));
+            uint32_t value_length = *(reinterpret_cast<uint32_t*>(_value_length));
+            char* _value = new char [value_length + 1];
+            _value[value_length] = '\0';
+            search_file.read(_value,value_length);
+            string value((_value));
+            delete[] _value;
+
+            char _operation_log;
+            search_file.read(&_operation_log,sizeof(uint8_t));
+            uint8_t operation_log = *(reinterpret_cast<uint8_t*>(&_operation_log));
+            oprand log;
+            if(operation_log == 0){
+                log = oprand::SET;
+            }
+            else if(operation_log == 2){
+                log = oprand::REMOVE;
+            }
+            Value tmp(value,log);
+            delete[] _key;
+            return std::pair<Value,bool>(tmp,true) ;
         }
     }
-    //Not found
     return std::pair<Value,bool>(Value(),false);
+}
+
+std::pair<Value,bool> sstable::find(const string& key){
+    std::pair<Value,bool> result(Value(),false);
+    for(int level = 0; level< sstable::max_level;level ++){
+        for(int order = this->file_count_per_level[level] - 1 ; order>=0;order--){
+            result = this->find_key_in_file(level,order,key);
+            if(result.second) break;
+        }
+        if(result.second) break;
+    }
+    //Not found
+    return result;
 }
 
