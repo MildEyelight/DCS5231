@@ -4,17 +4,20 @@
 void dsc5231Object::free_value_space(){
     if(this->value!=nullptr) {
         if(this->_t == RAW_DATA_TYPE::L_INT){delete reinterpret_cast<int32_t*>(this->value);}
-        else if(this->_t == RAW_DATA_TYPE::L_STRING){delete reinterpret_cast<lstring*>(this->value);}
+        else if(this->_t == RAW_DATA_TYPE::L_STRING){delete reinterpret_cast<string*>(this->value);}
         else if(this->_t == RAW_DATA_TYPE::L_VECTOR){delete reinterpret_cast<lvector*>(this->value);}
         else if(this->_t == RAW_DATA_TYPE::L_HASH_TABLE){delete reinterpret_cast<lhash*>(this->value);}
         else if(this->_t == RAW_DATA_TYPE::L_SET){delete reinterpret_cast<lset*>(this->value);}
     }
     this->value=nullptr;
 }
+dsc5231Object::dsc5231Object():value(nullptr),_t(RAW_DATA_TYPE::L_NULL){
+
+}
 dsc5231Object::dsc5231Object(void* ptr,const RAW_DATA_TYPE _type){
     //这里的实现也有些问题。)
     if(_type == RAW_DATA_TYPE::L_INT){this->value = new int32_t(*reinterpret_cast<int32_t*>(ptr));}
-    else if(_type == RAW_DATA_TYPE::L_STRING){this->value = new lstring(*reinterpret_cast<lstring*>(ptr));}
+    else if(_type == RAW_DATA_TYPE::L_STRING){this->value = new string(*reinterpret_cast<string*>(ptr));}
     else if(_type == RAW_DATA_TYPE::L_VECTOR){this->value = new lvector(*reinterpret_cast<lvector*>(ptr));}
     else if(_type == RAW_DATA_TYPE::L_HASH_TABLE){this->value = new lhash(*reinterpret_cast<lhash*>(ptr));}
     else if(_type == RAW_DATA_TYPE::L_SET){this->value = new lset(*reinterpret_cast<lset*>(ptr));}
@@ -22,10 +25,12 @@ dsc5231Object::dsc5231Object(void* ptr,const RAW_DATA_TYPE _type){
     this->_t = _type;
 }
 dsc5231Object::dsc5231Object(const dsc5231Object& a){
+    //A deep copy cause a pointer within dsc5231Object.
+    
     auto ptr = a.value;
     auto _type = a._t;
     if(_type == RAW_DATA_TYPE::L_INT){this->value = new int32_t(*reinterpret_cast<int32_t*>(ptr));}
-    else if(_type == RAW_DATA_TYPE::L_STRING){this->value = new lstring(*reinterpret_cast<lstring*>(ptr));}
+    else if(_type == RAW_DATA_TYPE::L_STRING){this->value = new string(*reinterpret_cast<string*>(ptr));}
     else if(_type == RAW_DATA_TYPE::L_VECTOR){this->value = new lvector(*reinterpret_cast<lvector*>(ptr));}
     else if(_type == RAW_DATA_TYPE::L_HASH_TABLE){this->value = new lhash(*reinterpret_cast<lhash*>(ptr));}
     else if(_type == RAW_DATA_TYPE::L_SET){this->value = new lset(*reinterpret_cast<lset*>(ptr));}
@@ -41,7 +46,7 @@ void dsc5231Object::operator=(const dsc5231Object& a) {
     if(this->value!=nullptr) this->free_value_space();
     //这里的实现也有些问题。
     if(a._t == RAW_DATA_TYPE::L_INT){this->value = new int32_t(*reinterpret_cast<int32_t*>(a.value));}
-    else if(a._t == RAW_DATA_TYPE::L_STRING){this->value = new lstring(*reinterpret_cast<lstring*>(a.value));}
+    else if(a._t == RAW_DATA_TYPE::L_STRING){this->value = new string(*reinterpret_cast<string*>(a.value));}
     else if(a._t == RAW_DATA_TYPE::L_VECTOR){this->value = new lvector(*reinterpret_cast<lvector*>(a.value));}
     else if(a._t == RAW_DATA_TYPE::L_HASH_TABLE){this->value = new lhash(*reinterpret_cast<lhash*>(a.value));}
     else if(a._t == RAW_DATA_TYPE::L_SET){this->value = new lset(*reinterpret_cast<lset*>(a.value));}
@@ -65,8 +70,8 @@ void dsc5231Object::_append(const dsc5231Object& _append_data){
     }
     else if(this->_t == RAW_DATA_TYPE::L_NULL);//Special process  
     else if(this->_t == RAW_DATA_TYPE::L_STRING){
-        auto current_data_ptr = reinterpret_cast<lstring*>(this->value);
-        auto append_data_ptr = reinterpret_cast<lstring*>(_append_data.value);
+        auto current_data_ptr = reinterpret_cast<string*>(this->value);
+        auto append_data_ptr = reinterpret_cast<string*>(_append_data.value);
         current_data_ptr->append(*append_data_ptr);
     }
     else if(this->_t == RAW_DATA_TYPE::L_VECTOR){
