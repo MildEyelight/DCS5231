@@ -11,7 +11,6 @@ void database::set(const string& key, const string& value){
     if(this->memtable->get_node_number()>=database::MAX_KVPAIR_COUNT){
         this->mmtable_to_sstable();
     }
-    return;
 }
 
 void database::remove(const string& key){
@@ -35,19 +34,16 @@ std::pair<Value,bool> database::find(const string& key){
     else{
         return this->sstable_manager->find(key);
     }
-    //search sstable
 }
 
 
 void database::mmtable_to_sstable(){
     //For asynchronous propose.
     this-> immutable_memtable = this->memtable;
-    this->memtable = new lsmtree();
-    this->sstable_manager->save_memtable(immutable_memtable);
+    this-> memtable = new lsmtree();
+    this-> sstable_manager->save_memtable(immutable_memtable);
     delete this->immutable_memtable;
     this->immutable_memtable = nullptr;
-
-    return;
 }
 database::database():memtable(new lsmtree()),
                      immutable_memtable(nullptr),

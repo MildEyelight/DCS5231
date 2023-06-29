@@ -2,20 +2,14 @@
 #define __SSTABLE_H__
 
 #include <string>
-
-//cpp17?
-//#include <filesystem>
-
 #include <array>
 #include <vector>
 #include "lsmtree.h"
-
 #include <dirent.h>
 #include <sys/stat.h>
 using std::string;
 using std::array;
-
-//Consider Singleton ? 
+ 
 class sstable{
 private:
     static const string ss_file_path;
