@@ -6,6 +6,7 @@
 #include "lsmtree.h"
 
 #include <fstream>
+#include <memory>
 
 using std::vector;
 using std::string;
@@ -32,7 +33,7 @@ bool sstable::check_mergeable(int level){
 };
 
 std::pair<uint32_t,uint32_t> sstable::get_metadata(std::ifstream& file){
-    file.seekg(sstable::metadata_seg_length,std::ios::end);
+    file.seekg(-sstable::metadata_seg_length,std::ios::end);
     char* s = new char[sstable::metadata_seg_length];
     file.read(s,sizeof(uint32_t)+sizeof(uint32_t));
     uint32_t* node_count = reinterpret_cast<uint32_t*>(s);
@@ -203,7 +204,7 @@ void sstable::save_memtable(lsmtree* tree_to_save, int level){
 
     //Save meta data
     outfile.write(reinterpret_cast<char*> (&node_count), sizeof(node_count));
-    outfile.write(reinterpret_cast<char*> (&seg_ptr),sizeof(&seg_ptr));
+    outfile.write(reinterpret_cast<char*> (&seg_ptr),sizeof(seg_ptr));
 
     outfile.close();
     return;
@@ -216,17 +217,21 @@ std::pair<Value,bool> sstable::find_key_in_file(int level,int order,const std::s
     std::pair<uint32_t,uint32_t> metadata = this->get_metadata(search_file);
     uint32_t node_count = metadata.first;
     uint32_t key_seg = metadata.second;
-
+    #ifdef __DEBUG__
+    #include <iostream>
+    std::cout<<node_count;
+    #endif
     search_file.seekg(key_seg,std::ios::beg);
     char _key_length[sizeof(uint32_t)];
     char _data_ptr[sizeof(uint32_t)];
     for(int i = 0; i < node_count;i++){
         //get key 
-        search_file.read(_key_length,sizeof(uint32_t));
+        //    | key length | key | data_ptr
+        search_file.read(_key_length,sizeof(uint32_t));//key length
         uint32_t key_length = *(reinterpret_cast<uint32_t*>(_key_length));
         char* _key = new char [key_length + 1];
         _key[key_length] = '\0';
-        search_file.read(_key,key_length);
+        search_file.read(_key,key_length);//key 
         string key((_key));
         if(search_key==key) {
             search_file.read(_data_ptr,sizeof(uint32_t));
@@ -256,6 +261,10 @@ std::pair<Value,bool> sstable::find_key_in_file(int level,int order,const std::s
             Value tmp(value,log);
             delete[] _key;
             return std::pair<Value,bool>(tmp,true) ;
+        }
+        else{
+            search_file.read(_data_ptr,sizeof(uint32_t));
+            delete[] _key;
         }
     }
     return std::pair<Value,bool>(Value(),false);

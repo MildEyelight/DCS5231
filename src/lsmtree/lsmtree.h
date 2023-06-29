@@ -2,7 +2,7 @@
 #define __LSMTREE_H_
 
 #include <map>
-#include "../store/storestruct.h"
+#include "store/storestruct.h"
 #include <tuple>
 
 using std::map;

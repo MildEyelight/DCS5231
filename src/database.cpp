@@ -2,10 +2,15 @@
 #include <string>
 using std::string;
 
+const int32_t database::MAX_KVPAIR_COUNT = 1024;
+
 void database::set(const string& key, const string& value){
     Value insert_value(value,oprand::SET);
-    kvPair insert_kv(key,insert_value);
+    std::pair<string,Value> insert_kv(key,insert_value);
     this->memtable->set(insert_kv);
+    if(this->memtable->get_node_number()>=database::MAX_KVPAIR_COUNT){
+        this->mmtable_to_sstable();
+    }
     return;
 }
 
